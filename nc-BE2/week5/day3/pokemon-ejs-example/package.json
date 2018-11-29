@@ -1,0 +1,26 @@
+{
+  "name": "JS",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "psql -f seed/seed.test.sql && mocha spec --exit",
+    "seed:test": "psql -f seed/seed.test.sql",
+    "seed:dev": "psql -f seed/seed.sql",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "ejs": "^2.6.1",
+    "express": "^4.16.2",
+    "pg-promise": "^7.5.4"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "supertest": "^3.0.0"
+  }
+}

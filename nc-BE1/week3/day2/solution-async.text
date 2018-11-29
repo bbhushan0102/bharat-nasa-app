@@ -1,0 +1,111 @@
+const {
+  getArchEnemy,
+  getFile,
+  getFileMany,
+  getSuperHeroes,
+  getSingleHero
+} = require("./utils/index");
+
+const blockingEcho = function(str) {
+  startDate = Date.now();
+
+  while (Date.now() < startDate + 3000) {
+    return str;
+  }
+};
+
+const asyncEcho = function(str, strReturn) {
+  setTimeout(() => {
+    strReturn(null, `${str}`);
+  }, 3000);
+};
+
+const fetchSingleHero = function(cb) {
+  getSingleHero(function(error, name) {
+    cb(null, name);
+  });
+};
+
+const fetchSingleOpponent = function(cb) {
+  fetchSingleHero(function(error, name) {
+    getArchEnemy(name, function(error, name) {
+      cb(null, name);
+    });
+  });
+};
+
+const fetchSuperHeroes = function(cb) {
+  getSuperHeroes(function(error, nameArray) {
+    cb(null, (nameArray = nameArray.map(element => element.toUpperCase())));
+  });
+};
+
+const fetchOpponents = function(cb) {
+  const arr = [];
+  let counter = 0;
+  fetchSuperHeroes(function(error, nameArray) {
+    nameArray = nameArray.sort();
+    for (let i = 0; i < nameArray.length; i++) {
+      getArchEnemy(nameArray[i], function(error, villain) {
+        arr[i] = { hero: nameArray[i], villain: villain };
+        counter++;
+        if (counter === nameArray.length) {
+          cb(null, arr);
+        }
+      });
+    }
+  });
+};
+
+const fetchContentOfFiles = function(array, cb) {
+  let counter = 0;
+  let newArr = [];
+  array.forEach((element, index) => {
+    getFile(element, (err, fileStr) => {
+      newArr[index] = fileStr;
+      if (++counter === array.length) cb(null, newArr);
+    });
+  });
+};
+
+const fetchFilesAndLog = function(array, done) {
+  let counter = 0;
+  const newArr = [];
+  let newCounter = 0;
+  array.forEach((element, index) => {
+    getFile(element, (err, fileStr) => {
+      newArr[index] = fileStr;
+      while (newCounter < array.length && newArr[newCounter] !== undefined) {
+        if (newArr[newCounter] !== undefined) {
+          console.log(newArr[newCounter]);
+          newCounter++;
+        }
+      }
+      if (++counter === array.length) {
+        done(null, "string");
+      }
+    });
+  });
+};
+
+function fetchFileWithSingleCall(fileName, cb) {
+  let flag = true;
+  getFileMany(fileName, (error, name) => {
+    if (flag) {
+      cb(null, name);
+      flag = false;
+    }
+  });
+}
+
+module.exports = {
+  blockingEcho,
+  asyncEcho,
+  fetchSingleHero,
+  fetchSingleOpponent,
+  fetchSuperHeroes,
+  fetchOpponents,
+  fetchContentOfFiles,
+  fetchFilesAndLog,
+  fetchFileWithSingleCall
+};

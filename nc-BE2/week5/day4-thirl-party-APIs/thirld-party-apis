@@ -1,0 +1,65 @@
+# 3rd Party API's
+
+## Getting Started
+
+When using an external API for the first the getting started / example section is a great place to start. We can follow the getting started guides in a spike to make sure that we can get the api configured and responding correctly.
+
+[Personality Insights Getting Started guide](https://console.bluemix.net/docs/services/personality-insights/getting-started.html#getting-started-tutorial)
+
+If you're lucky the guide will be written in node, however this example uses curl. We can still follow the guide and use our intuition to figure out the flow of what's happening. We don't need to understand the syntax of curl, just a general overview of what it does.
+
+The other main area of interest is the [API reference](https://www.ibm.com/watson/developercloud/personality-insights/api/v3/node.html?node#introduction). This is where we can find more detailed information on the methods available, how they are used and what they return. 
+
+## using external api's in an express server
+
+Watson's api comes with an [sdk](https://github.com/watson-developer-cloud/node-sdk) that uses a constructor to access the api. Just as we do with creating an instance of db with pgp we can make one instance of the object and export it for use across our app. 
+
+The constructor will use our login info (in this case username and password but usually an api key) which we will need to keep private. 
+
+We can store these in our config (so it doens't get pushed to github) and require them in when we need them.
+
+### api/watson.js
+```js
+const PersonalityInsightsV3 = require('watson-developer-cloud/personality-insights/v3');
+
+const { PI_USERNAME, PI_PASSWORD, PI_URL } = require('../config')
+
+const personalityInsights = new PersonalityInsightsV3({
+    version: '2017-10-13',
+    username: PI_USERNAME,
+    password: PI_PASSWORD,
+    url: PI_URL
+});
+
+module.exports = personalityInsights
+```
+
+This can now be brought into our files and used whenever we need to make an api call. What type of function retrieves data for our server to respond with? A model!
+
+Using our MVC pattern we write models that will take some input from a controller, make the api request and return the data to the controller for it to use.
+
+By making discreet reusable models our controllers can use them to put data together from several sources and respond with it correctly.
+
+
+### controllers/insight.js
+```js
+const { analysePersonality } = require('../models/watson')
+const { getDataByTopic } = require('../models/news')
+const profile = require('../profile.json')
+
+exports.sendInsights = (req, res, next) => {
+    const { topic } = req.params
+    getDataByTopic(topic)
+        .then(articleContent => analysePersonality(articleContent))
+        .then(profile => res.send({ profile }))
+        .catch(next)
+}
+```
+
+# Extras
+
+IBM is a large company that had created sdk's for it's APIs. Most api's will not be so kind to you and leave you to making a http request yourself. We have seen how to do this with node's http module, you can use your new found documentation reading skills to investigate some request libraries that will streamline this process:
+
+* [superagent](https://visionmedia.github.io/superagent/) The library supertest is built on.
+* [axios](https://github.com/axios/axios) A popular request library.
+

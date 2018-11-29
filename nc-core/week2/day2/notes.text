@@ -1,0 +1,255 @@
+We mentioned yesterday that a really common use of recursion is to traverse nested data structures and tree data structures. A nested object is a classic example of this.
+
+
+
+Imagine we had an object and we had no idea what levels of nesting it had. We wanted to know whether any of the properties of this object matched a search term.
+
+```js
+
+const catRecord = {
+
+  basic: {
+
+    name: "Bernard",
+
+    age: 12,
+
+    breed: "Maine Coone",
+
+    sex: "male"
+
+  },
+
+  owner: {
+
+    name: "Mrs Jones",
+
+    contact: {
+
+      address: "55 Stretford Road, Manchester, M16 0GH",
+
+      telephone: 07734123123
+
+    },
+
+    notes: "Payment plan B, prefers morning appointments"
+
+  }
+
+};
+
+
+
+const anotherCatRecord = {
+
+  basic: {
+
+    name: "Bernard",
+
+    age: 12,
+
+    breed: "Maine Coone",
+
+    sex: "male"
+
+  },
+
+  owner: null
+
+};
+
+
+
+const anotherCatRecord = {
+
+  basic: {
+
+    name: "Bernard",
+
+    age: 12,
+
+    breed: "Maine Coone",
+
+    sex: "male"
+
+  },
+
+  owner: {
+
+    name: "Mr Smith",
+
+    address: null,
+
+    notes: null
+
+  }
+
+};
+
+```
+
+How could we create a function that searches for a specific string and which works for any kind of cat record? It's really hard without recursion because we have no idea how deep to go. We'd need a while loop and lots of flags to keep track of whether to keep looking or stop looking.
+
+
+
+But this is a classic problem for recursion because we can define a function that looks for a search term in a simple (flat) object and keep on re-using this function internally until we're done.
+
+
+
+To start off thinking about this, we can begin by just traversing a nested object, making sure we can access everything. This function doesn't return anything, it just visits nodes, so we don't need to worry about a return statement or a base case.
+
+
+
+So we need to think about:
+
+
+
+how to break the problem down
+
+what should happen on each recursive call
+
+```js
+
+// Step 1: Make it work for simple input
+
+function traverse(obj) {
+
+  for (let key in obj) {
+
+    console.log(obj[key]);
+
+  }
+
+}
+
+```
+
+```js
+
+// Step 2: pass parts of the problem on in a recursive call
+
+function traverse(obj) {
+
+  for (let key in obj) {
+
+    if (obj[key] instanceof Object) traverse(obj[key]);
+
+    else console.log(obj[key]);
+
+  }
+
+}
+
+
+
+const anotherCatRecord = {
+
+  animal: "cat",
+
+  basic: {
+
+    name: "Bernard",
+
+    age: 12,
+
+    breed: "Maine Coone",
+
+    sex: "male"
+
+  },
+
+  country: "UK",
+
+  owner: {
+
+    name: "Mr Smith",
+
+    address: null,
+
+    notes: null
+
+  }
+
+};
+
+
+
+traverse(anotherCatRecord);
+
+```
+
+We see we can access every property, no matter now nested it is. Note: we see 'cat' and then we see the values from the basic object next. In other words, we go deep before we go broad
+
+
+
+Let's say we want to modify this to not just visit each "node" in the nested structure, but we want to return true or false depending on whether we find a search term:
+
+
+
+So we need to think about:
+
+
+
+a base case, since we're now returning
+
+how to break the problem down
+
+what should happen on each recursive call
+
+Make it work for simple input
+
+
+
+```js
+
+function findString (obj, term) {
+
+  for (let key in obj) {
+
+   let found = obj[key].includes(term);
+
+   if (found) return true;
+
+  }
+
+
+
+  return false;
+
+}
+
+```
+
+Pass part of the problem on
+
+
+
+```
+
+function findString (obj, term) {
+
+  
+
+  let found = false;
+
+  for (let key in obj) {
+
+    if (typeof obj[key] === 'string') found = obj[key].includes(term);
+
+    else found = findString(obj[key], term);
+
+    if (found) return true;
+
+  }
+
+  return found;
+
+}
+
+
+
+console.log(findString(catRecord, "Jones"));
+
+```
+
+

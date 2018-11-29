@@ -1,0 +1,213 @@
+
+How many things can I do in Javascript at once? One. Why? Because it's single threaded.
+
+As we've understood with our examples so far, that means doing one line of code at a time.
+
+But we've reached the limits of this linear, synchronous way of thinking about things.
+
+For example, what if I was building a portfolio page that displayed some of my tweets. I sent off a request to fetch my tweets, and wanted to do something with that information when it came back?
+
+Well, that's going to take time. Make a request to Twitter's API is not instantaneous. So we have a problem. If we followed the normal, linear way of following code that we have so far, how could we stop the functionality for displaying the tweets from firing before we have the tweets back?
+
+Let's look an example of asynchronicity on a smaller scale, to see if we can get any ideas.
+
+So let's think this code to refresh our memory.
+
+```js
+const message1 = 'ME FIRST!';
+const message2 = 'ME SECOND!';
+console.log(message1);
+console.log(message2);
+```
+
+And let's look at this example:
+
+```js
+const logMeFirst = () => {
+  console.log('me first!');
+};
+setTimeout(logMeFirst, 1000);
+```
+
+So here, we wait 1000 milliseconds before we get our me first console.logging. Hopefully nothing too surprising here.
+
+But what happens if I do this?
+
+```js
+const logMeFirst = () => {
+  console.log('me first!');
+};
+setTimeout(logMeFirst, 1000);
+console.log('me second!');
+```
+
+Okay... that's puzzling. Now what happens when I do this?
+
+```js
+const logMeFirst = () => {
+  console.log('me first!');
+};
+setTimeout(logMeFirst, 0);
+console.log('me second!');
+```
+
+WHAT JUST HAPPENED??
+
+Clearly our current understanding of Javascript is no longer sufficent. `me second` is running before `me first`. This is called non-blocking code. I.e. Our javascript has done something with our setTimeout, and will come back to it later. It's carried on reading the rest of the code in a synchronous, linear manner.
+
+Currently we understand our code with:
+
+* The thread of execution
+* The VE
+* The Call Stack
+
+In order to understand async code to the same degree, we're going to ahve to add some new tools to our kit. They are:
+
+* Browser / Node background threads
+* Callback / Message / Task Queue
+* The event loop
+
+## Background Threads
+
+So it's clear from our example that something peculiar is happening. The first new tool we're going to need to understand is background threads.
+
+When we call setTimeout, it clearly isn't going onto our stack. It's actually making a call to either the browser API or Node.
+
+Let's go back to our simpler example for the time being.
+
+```js
+const logMeFirst = () => {
+  console.log('me first!');
+};
+setTimeout(logMeFirst, 1000);
+console.log('me second!');
+```
+
+The function we have passed it - in this example `logMeFirst`, is stored against that timer. When the timer expires, it pushes logMeFirst to the call stack. Simple, right?
+
+Well hang on. What happening when my timer is set to 0 seconds? How does Javascript work out what gets called first? Is it just luck?
+
+When we trigger a timer, something in the background of JS, called the event loop, waits for it to complete. When it does, it pushes it onto the task queue. In this example, it completes instantly and gets pushed onto the task queue.
+
+But Javascript ruins to completion. So in this example, the timer completes instantly. And the function `logMeFirst` is added to the Task Queue. Now the task queue doesn't pass to the call stack until it's completely empty. **Including having global popped off**
+
+So even though the timer is set to zero, and immediately triggers, it still has to wait in the task queue until everything else has finished. So if I called a thousand functions in the rest of the global, that took ten minutes to run, that 0 second timer would still fire afterwards.
+
+See more examples in resources folder for students to think about this process.
+
+# Sources of asyncronicity
+
+There are 5 main sources of asyncronous code;
+
+1.  User interactions
+2.  Network I/O
+3.  Disk I/O
+4.  IPC - Interprocess communication i.e. web workers
+5.  Timers
+
+# Callbacks
+
+## The need for callbacks
+
+What will the code below output:
+
+```js
+const getMP3 = title => {
+  return `${title}.MP3`;
+};
+const ninetiesClassic = getMP3('Rhythmn of the night');
+console.log(ninetiesClassic);
+```
+
+We would expect to see an output of `'Rhythmn of the night.MP3'`.
+We can save the return value of `getMP3` into a variable and access it afterwards. This is only possible because the above code is synchronous.
+
+How about an example where getMP3 is made asynchronous using `setTimeout`?
+
+```js
+const getMP3 = title => {
+  setTimeout(() => {
+    return `${tite}.MP3`;
+  }, Math.random() * 5000);
+};
+const ninetiesClassic = getMP3('Rhythmn of the night');
+console.log(ninetiesClassic);
+```
+
+What will the output be for the above code? We end up seeing `undefined` for the console.log of `ninetiesClassic`. There is **NO** explicit return statement in the execution context of `getMP3` : it simply invokes `setTimeout`. So we can no longer rely on saving information in variables when we call functions.
+
+## Defining callbacks
+
+We can add an extra parameter to getMP3 - something like `handleMP3`.
+This parameter is a placeholder for a **callback function**.
+Callbacks are just functions that are pieces of code that may be executed at some point in the future. Whatever we would like to do with the MP3 once it has come back, we will do in the `handleMP3` function. See below:
+
+```js
+const getMP3 = (title, handleMP3) => {
+  setTimeout(() => {
+    handleMP3(`${tite}.MP3`);
+  }, Math.random() * 5000);
+};
+
+const logAndSing = MP3 => {
+  console.log(`La La La...${MP3} ... La La La`);
+};
+getMP3('Rhythmn of the night', logAndSing);
+```
+
+`logAndSing` is a callback function. It will be executed at a future point after the function passed to `setTimeout` has timed out. When `logAndSing` is invoked we can then go and on and do what we want with the MP3.
+
+Callbacks give us a way to be able to use asyncronous processes and then continue to work on the results after the function has finished. You might notice here that we don't return anything here. That's because the return value is actually irrelevant. We can only use the MP3 in our callback.
+
+## Error-first callbacks
+
+The convention for asynchronous callbacks is to write them **error-first**. This is in order to ensure uniformity across async callbacks, and ensure that errors aren't forgotten.
+
+Don't forget with `setTimeout` we're merely simulating a request to a server.
+
+```js
+const getMP3 = (title, handleMP3) => {
+  setTimeout(() => {
+    if (typeof title !== 'string') handleMP3('Invalid title format');
+    else handleMP3(null, `${title}.MP3`);
+  }, Math.random() * 5000);
+};
+
+const logAndSing = (err, MP3) => {
+  console.log(`La La La...${MP3} ... La La La`);
+};
+getMP3('Rhythmn of the night', logAndSing);
+```
+
+When we **declare** the callback function: it must have an first parameter off `err`
+
+When we **invoke** the callback function: this is where we must actually say what `err` is going to be.
+
+```js
+const getMP3 = (title, handleMP3) => {
+  setTimeout(() => {
+    if (typeof title !== 'string') handleMP3('Invalid title format');
+    else handleMP3(null, `${title}.MP3`);
+  }, Math.random() * 5000);
+};
+
+getMP3('Rhythmn of the night', (err, MP3) => {
+  console.log(`La La La...${MP3} ... La La La`);
+});
+```
+
+In this final example, the callback function is now just an anonymous arrow function that we pass directly into `getMP3` as an argument.
+
+## Testing
+
+Mocha uses done which is a function that is passed in as an argument to the it callback function. Mocha runs test automatically as if it was sync and by using done, it tells mocha that your code is async and therefore makes it wait for a response. It will wait for a certain amount of time but it also has a default timeout period, so if you get this error and your pretty certain your code should work, have a google about this and see what you find (i.e. you may need to make the timeout period longer)
+
+## KEY-TERMS
+
+After today you should all be more comfortable with some of the buzzwords you hear about JS
+
+* Callbacks
+* Non-blocking / blocking
+* Asynchronous
+* Run-to-completion
+* Event loop, queue and call stack

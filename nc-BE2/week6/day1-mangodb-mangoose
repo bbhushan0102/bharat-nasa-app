@@ -1,0 +1,191 @@
+
+# Setup
+
+Mac - `brew install mongodb`
+UBUNTU - `sudo apt -y install mongodb`
+
+* Run the command `mongod` in your terminal.  At the bottom, it should say :
+`waiting for connections on port 27017...`
+
+
+## Common issues
+
+/data/db not found/ does not exist, words to that effect -
+
+`mkdir -p /data/db`
+
+read/write issues to /data/db
+
+`sudo chown -R $USER /data/db`
+
+# Introduction to MongoDB
+
+* MongoDB is a no-SQL, document oriented database.
+* Instead of storing data in tables, rows and columns, it stores them in collections, documents and properties.
+* MongoDB stores data in Binary JSON objects (BSON), which look like and work pretty much exactly like plain JavaScript objects, with some exceptions
+
+# Advantages of MongoDB
+
+### Flexibility
+
+* Each document within a collection can have different properties from other documents in the same collection. The data that you insert into a collection doesn't have to adhere to a strict form : unless we use a mongoose schema to impose more structure on what we insert into our database.
+
+### Intuitive
+
+* Documents represent data in the same way as applications do.
+  Data can have arrays and objects inside them and this will be represented clearly by the BSON documents stored in our collections.
+
+# Getting started...
+
+To start using MongoDB first we need to run the MongoDB server with the `mongod` command. This process should "hang" because it starts a server that listens for `mongodb` requests on `localhost:27017`.
+
+**Note:** If the `mongod` command terminates immediately it probably means that it's already running in the background. In that case you can continue working or kill the process and start it again. You can find the currently running `mongod` process by running `ps aux | grep mongod`. There you should find the ID of the process and then run `kill <process_id>`.
+
+We can directly talk to the MongoDB server from the shell by running the `mongo` command. This starts the Mongo shell that allows us to issue commands to query, insert/update/delete documents, etc.
+
+You can kill the `mongod` process using `Ctrl+C`
+You can quit the `mongo` shell with `quit()` : this will exit the mongo shell in the correct way
+
+### Useful commands
+
+`show dbs` shows a list of all the currently existing databases
+`use <db_name>` makes the specified database the current database, to which you can refer to as just `db`
+`use <db_name>` if the database doesn't exist, it will create it
+`show collections` shows the available collections of the current database
+
+### Simple queries
+
+`db.users.save({name: "Mitch"})` will save a user document with a name property
+`db.users.find({gender: "male})` will return an array of all documents that have a `gender` property of `male`
+`db.users.find().count()` will return the count of all existing users
+`db.users.findOne({name: "Mitch"})` will return a single document that matches the query. If there is more than one match, MongoDB will still return just one and you shouldn't rely on the criteria MongoDB uses to decide which one to return.
+
+## Querying MongoDB programmatically
+
+To talk to the MongoDB server we'll use a library called `mongoose`. Mongoose uses internally the official `mongodb` package but it provides a much more developer-friendly API.
+
+We can connect to our database like so:
+
+```js
+const mongoose = require('mongoose');
+const DB_URL = 'mongodb://localhost:27017/example';
+
+mongoose.connect(DB_URL)
+  .then(() => console.log(`Connected to database ${DB_URL}`))
+  .catch(console.log);
+```
+
+## Models and Schemas
+
+The interface with a MongoDB collection is done through a Mongoose model. You can think of models as classes that allow you to instantiate new documents and also query the already existing ones.
+
+Schemas allow MongoDB to validate the properties of a document. You can think of them as the headers of an SQL table: they determine what properties a document has and what type they should be.
+
+In this example we are creating a `User` model with a schema that defines 3 properties: `name` and `gender` as strings and `age` as a number.
+
+After defining our model, we query for all users with a `name` property of `Mauro`. The callback we pass as the 2nd argument gets called with the result of the query as the second argument (error first).
+
+```js
+const userSchema = new mongoose.Schema({
+  name: {type: String, required: true},
+  age: {type: Number, required: true}
+  gender: String
+});
+
+const User = mongoose.model('users', userSchema);
+```
+
+## Saving documents
+
+Schemas are useful when performing write operations on our database. Let's see how we can insert a new user to our collection:
+
+```js
+const daryl = new User({ name: 'Daryl', gender: 'male', age: 27 });
+
+daryl.save()
+  .then(darylDoc => console.log(darylDoc)) // this will come back as it looks in the DB - with _id and __v.
+});
+```
+
+When you instantiate a model, you create a new document that has a prototype method `save`. If you want to do something after the document is saved, you can pass an error-first-callback to `save` that will get called with the result of the save operation.
+
+In order to see schema validation in action we can pass a string as the `age` property. MongoDB will give us an error saying that `age` should be a number and the document won't be saved:
+
+```js
+const daryl = new User({ name: 'Daryl', gender: 'male', age: 'not a number' });
+```
+
+## Inserting many documents into a collection
+
+When seeding a database we might want to insert a lot of data into our collections. Since each call to `save` sends a single request to the MongoDB server, we run the risk of overloading the server with requests to fulfill.
+
+To avoid this, we can use the `insertMany` method of a model, which takes as the first argument an array of documents and will save them all at once in one single request.
+
+The only drawback of this approach is that, for performance reasons, MongoDB will bypass the schema validation. So it's a good idea to implement a factory function that will create our documents consistently.
+
+```js
+// models/user.js
+const mongoose = require('mongoose');
+const faker = require('faker');
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  age: Number,
+  gender: String
+});
+
+const User = mongoose.model('users', userSchema);
+
+exports.User = User;
+
+exports.createUser = () =>
+  ({
+    name: faker.name.findName(),
+    gender: Math.random() < 0.5 ? 'female' : 'male',
+    age: Math.floor(Math.random() * 100 + 1)
+  });
+```
+
+```js
+// index.js
+const users = Array.from({ length: 10 }, createUser);
+
+User.insertMany(users)
+  .then(users => {
+    console.log(users)
+  })
+  .catch(console.error)
+```
+
+## Mongoose is Promise-based
+
+A great benefit we gain by using `mongoose` is that all asynchronous methods support both callbacks and promises. If an asynchronous method does not receive a function as its last argument, it will return a promise that resolves with the results of the operation.
+
+This allows us to write sequential operations in a linear way instead of having to nest callbacks.
+
+Let's refactor the previous examples to use promises and make them happen one after the other. We'll also add a function call to drop the database at the beginning and to disconnect from the server at the end.
+
+```js
+mongoose
+  .connect(DB_URL)
+  .then(() => {
+    console.log(`Connected to database ${DB_URL}`);
+    return mongoose.connection.dropDatabase();
+  })
+  .then(() => {
+    const daryl = new User({ name: 'Daryl', gender: 'male', age: 27 });
+    return daryl.save();
+  })
+  .then(() => {
+    const users = Array.from({ length: 10 }, createUser);
+    return User.insertMany(users);
+  })
+  .then(() => {
+    return User.count({ name: 'mitch' });
+  })
+  .then(mitchCount => {
+    console.log(`There are ${mitchCount} mitches in the database`);
+    return mongoose.disconnect();
+  })
+  .catch(console.error);
+```

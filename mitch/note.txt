@@ -1,0 +1,4 @@
+create - react app
+face book invernted -> create react app
+new command npc
+npx  create react app 

@@ -1,0 +1,52 @@
+```js
+function returnTimesTwo() {
+  return function(n) {
+    return n * 2;
+  };
+}
+
+const timesTwo = returnTimesTwo();
+console.log(timesTwo);
+console.log(timesTwo(2));
+```
+
+
+
+```js
+function returnTimesMult(mult) {
+  return function(n) {
+    return n * mult;
+  };
+}
+
+const timesTwo = returnTimesMult(2);
+console.log(timesTwo(2));
+const timesThree = returnTimesMult(3);
+console.log(timesThree(2));
+```
+
+So what does this show us? When we define a function, it MUST have access to the variable environment within its scope. This is called a COVE, or a closed over variable environment. In a course I watched, this was described as a little backpack that follows the function around, which is a nice way of thinking about it. Let's have a look at another example.
+Now look at this:
+```js
+
+function foo() {
+  let a = 2;
+  function bar() {
+    console.log(a);
+  }
+  return bar;
+}
+
+const baz = foo();
+baz(); // 2
+```
+bar has lexical scope access to the inner scope of foo. But then, we take bar, the function itself, and pass it as a value. In this case we return the function object itself that bar references.
+
+After we call foo, we assign the value it returned (our inner bar ) to a variable called baz, and we actually invoke baz, which of course is invoking our inner function bar, just by a different identifier.
+
+Important: baz still has a reference to its lexical scope, and that reference is called closure.
+
+
+Definition: Closure is when a function is able to remember and access its lexical scope even when that function is executing outside its lexical scope.
+
+Definition: A closure is a function bundled together with references to it’s surrounding state (lexical environment/scope). Simply define a function inside another function and expose the inner function. The inner function will have access to the variables in the outer function’s scope. Forever.

@@ -1,0 +1,145 @@
+## HOW THE INTERNET WORKS
+
+**Q**: What is the difference between the internet and the web?
+
+**A**: The internet is a network of computers connected by wires and routers. The web is a collection of documents linked to each other by hyper-text.
+
+Every connection to the internet has its own IP address which allows it to be located in the same way a postal address does for a house.
+
+**_EXAMPLE_**
+_There is a command called **ping** that lets us test a connection to another machine on the internet. Lets try it with google._
+
+`ping www.google.com`
+
+_As you can see one of the first things in the terminal is an IP address corresponding to the website we just pinged._
+_We can use this IP address in the same way we did with google's web address because they both point to the same server on the internet_
+
+`ping 216.58.206.100`
+
+_And just to prove this lets try it in the browser_
+
+`216.58.206.100`
+
+Although IP addresses are the way that machines find each other on the internet they aren't very memorable or human friendly, so in place of these strings of numbers, servers use the DNS or **D**omain **N**ame **S**ystem. You can think of it as the yellowpages of the internet where web addresses are assigned to their corresponding IP addresses.
+
+Your computer/device also has a MAC address. This is a unique identified for the device, which is important because a single IP address can be shared by multiple devices on the same network.
+
+**HOW DATA IS SENT OVER THE INTERNET**
+
+**PROTOCOLS**
+
+For the millions of computers and machines connected to the internet to communicate successfully, they must all follow a certain set of rules (protocols).
+
+The process of transferring data accross the internet is split into 4 layers, each layer using one or more protocols to handle the process:
+
+
+* **APPLICATION** - This is the layer that applications like your browser directly interact with **(PROTOCOLS: http, ftp, smtp)**. When the application layer has its data ready it talks to the transport layer through something called a PORT (think of a port as a doorway). Each port can be assigned to a different protocol in the application layer so that the transport layer knows where the data is coming from.
+  (EXAMPLE: http uses port 80)
+
+* **TRANSPORT** - **(PROTOCOLS: Transmission Control Protocol (TCP most common), UDP)**. When TCP (Transmission Control Protocol) is passed data from the application layer it breaks it up into segments known as packets. Transferring data in this smaller form means the each packet can take the quickest route to it's destination by avoiding traffic. TCP will also put a header onto each packet so that the receiving computer knows how to put the data back together and whether or not each data packet arrived properly. These packets are then passed on to the internet layer
+
+* **INTERNET** - **(PROTOCOLS: IP)** This layer uses IP to attach both an origin and destination address to each packet so that it knows where it came from and where it is going.
+
+* **NETWORK** - This layer deals with attaching mac addresses to the packets to direct them to a specific machine at the destination IP address. It also deals with converting the data into the electrical impulses that will actually travel accross the net.
+
+---
+
+**WHAT IS A REQUEST?**
+
+**Request Protocols**
+We touched on some of the protocols used in requests when we spoke about the application layer (http, ftp, smtp).
+
+**CRUD**
+There are quite a few different methods available for making requests on the internet. The most common ones are
+
+* GET - used when asking for something back
+* POST - used for adding something to a database. These requests have bodies which hold the bulk of the request and the text that we want to send
+* PATCH / PUT - used to partially update something in a database.
+* DELETE
+
+**WHAT IS AN API**
+
+Imagine you wanted to build a piece of software that made use of the data you can see on facebook, such as posts, comments, profile images etc. You could think about creating something that would navigate the website, read the screen, process the things it reads and deciphers what they are, whether they're posts or comments or likes, building something that did that would be a mammoth task. That's where APIs come in...
+
+**Q:** What does API stand for?
+
+**A:** Application Programming Interface
+
+An api is something that a third party might use as a way of giving others access to their data. For example the data that facebook has on its users is scarily comprehensive, and some of it could be useful for applications you might wish to make.
+
+lets use github's API to demonstrate:
+
+_**EXAMPLE**_
+
+`api.github.com/`
+
+When we go to github's api we're presented with this response, which looks something like an object. This is an object in the JSON format (Javascript Object Notation) and is a format used for sending http requests and responses. This particular object is giving us information on how to use github's API.
+
+If we make a request to one of these urls:
+
+`https://api.github.com/users/{user}`
+
+we can see that github is giving us data according to the the url we used in our request.
+
+`https://api.github.com/users/{user}`
+
+As you can see, the data that we get back could actually be useful if we wanted to build something around it, or incorporate it into an app.
+
+`https://api.github.com/search/repositories?q={search-query}`
+
+#### THE ANATOMY OF A URL
+
+* `http://` (protocol)
+* api. (conventionally used to tell the user what type of server the URL points to)
+* github (name)
+* .com (top level domain)
+* /search/repositories ()
+* ?q=something (query)
+
+**URL QUERIES**
+
+In this last example you'll notice the unusual syntax at the end of the url. In a URL this is known as a query. A question mark followed by key value pairs where multiple queries are seperated by the `&` symbol.
+
+
+```js
+//https allows us to send requests. No need to npm install.
+const https = require('https');
+
+const options = {
+  hostname: 'api.github.com',
+  path: '/users/northcoders',
+  method: 'GET',
+  headers: {
+    'User-Agent': 'northcoders'
+  }
+};
+
+const req = https.request(options, function (res) {
+  console.log('res.statusCode:', res.statusCode);
+
+  let body = '';
+
+  res.on('data', function (data) {
+    body += data.toString();
+    // console.log('\nBODY:', body); ==> undefined
+    // console.log('\nDATA:', data);
+  });
+  res.on('end', function () {
+    // console.log('rawBody:', body);
+    console.log('\nPARSED BODY:', JSON.parse(body));
+  });
+})
+
+req.on('error', function (err) {
+  console.error(err);
+});
+
+req.end();
+```
+
+Up until this point we've been writing code that runs on our own computers, so hopefully, now that we've touched on making basic http requests, you can see how this opens our code up to interacting with the rest of the world.
+
+There are hundreds of interesting APIs that you can interact with but for today's sprint you'll be looking at the Twitter API and getting used to making requests like this.
+
+A really cool series of videos on how the internet works : do check them out if you have time:
+* https://www.youtube.com/watch?v=Dxcc6ycZ73M&list=PLzdnOPI1iJNfMRZm5DDxco3UdsFegvuB7

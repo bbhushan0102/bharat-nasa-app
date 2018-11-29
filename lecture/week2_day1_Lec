@@ -1,0 +1,47 @@
+const hof = {};
+
+hof.identity = arg => arg;
+
+hof.identityf = function (arg) {
+    return function () {
+        return arg;
+    }
+};
+
+hof.add = (a, b) => a + b;
+
+hof.sub = (a, b) => a - b;
+
+hof.mul = (a, b) => a * b;
+
+hof.addf = function (a) {
+    return function (b) {
+        return a + b;
+    }
+};
+
+// hof.addf = x => y => x + y;
+
+hof.liftf = function (binaryFunc) {
+    // spit out addf
+    return function (a) {
+        // spit out add3
+        return function (b) {
+            return binaryFunc(a, b)
+        }
+    }
+};
+
+const addf = liftf(add);
+const add3 = addf(3);
+const four = add3(1);
+
+hof.curry = function () { };
+
+hof.inc = function () { };
+
+hof.twice = function (binaryFunc) {
+    return function (a) {
+        return binaryFunc(a, a);
+    }
+};

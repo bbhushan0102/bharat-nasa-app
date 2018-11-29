@@ -1,0 +1,172 @@
+## Topics for today
+
+## Recap
+
+* Recap setting up an express application
+* What dependencies do we need for an express server
+  .e.g body-parser etc
+* What do controller functions always take : req and res (at the moment)
+* How do we send information back to the client side?
+* How do we get additional information from the url? Go over `req.params` and `req.query`
+
+
+## Learning Objectives
+
+Students should be able to:
+
+* Understand what a **middleware** function is
+* Refactor to mount routes.
+* Set up their own error-handling middleware function in their app.js file.
+
+
+## Express Middleware
+
+In express, a middleware function is a function that has access to the request object, the response object and the next middleware function in the request-response cycle.
+An express application is basically a chain of middleware middleware function calls.
+ 
+Generally middleware functions provide an extra layer of functionality to our server and essentially can be thought of as a list of functions that a request must flow through before hitting the application logic: it's also therefore important to think about the placement of our middleware functions 
+
+So far we've seen middleware in the form of body-parser which is a function call before we get to our routing and controller logic to deal with any possible incoming req.bodys. In this lecture, we will add router and error-handling middleware to our series of middleware calls in the request-response cycle.
+
+
+## Refactoring to mount routes
+
+If we have all of the routes and controllers in a single file, it starts to get in a bit of a mess and as the application grows, it will become an even bigger mess.
+
+We all know that splitting code up into it's own single purpose module is useful and express gives us an easy way to facilitate this in regards to splitting up server routes into smaller subrouters.
+
+This is where we are currently at:
+
+```js
+const app = require('express')();
+
+app.get('/api/users', (req, res) => {
+  res.status(200).send('All OK from /api/users');
+});
+
+app.get('/api/users/:id', (req, res) => {
+  res.status(200).send('All OK from /api/users/:id');
+});
+
+app.get('/api/users/:id/shoppingList', (req, res) => {
+  res.status(200).send('All OK from /api/users/:id/shoppingList');
+});
+
+app.get('/api/fruits', (req, res) => {
+  res.status(200).send('All OK from /api/fruits');
+});
+
+app.get('/api/fruits/:id', (req, res) => {
+  res.status(200).send('All OK from /api/fruits/:id');
+});
+
+app.listen(3000, err => {
+  if (err) return console.log(err);
+});
+```
+
+Let's create a `routes` directory and add a `api-router.js` file.
+In here we need to do the following (copy parts over at a time)
+
+```js
+const apiRouter = require('express').Router();
+
+apiRouter.get('/users', (req, res) => {
+  res.status(200).send('All OK from /api/users');
+});
+
+apiRouter.get('/users/:id', (req, res) => {
+  res.status(200).send('All OK from /api/users/:id');
+});
+
+apiRouter.get('/users/:id/shoppingList', (req, res) => {
+  res.status(200).send('All OK from /api/users/:id/shoppingList');
+});
+
+apiRouter.get('/fruits', (req, res) => {
+  res.status(200).send('All OK from /api/fruits');
+});
+
+apiRouter.get('/fruits/:id', (req, res) => {
+  res.status(200).send('All OK from /api/fruits/:id');
+});
+
+module.exports = apiRouter;
+```
+
+Now the `app.js` needs to be refactored
+
+```js
+const app = require('express')();
+const apiRouter = require('./routes/api-router');
+
+app.use('/api', apiRouter);
+
+module.exports = app;
+```
+
+Now the file that is in charge of starting the server has only the minimal code.
+
+We can create even more subrouters too, so within the `apiRouter` we can `use` another user. The best way to do this is to create another file for the route, so let's create a `user.js` file in the `routes` dir with the folliwing:
+
+```js
+const usersRouter = require('express').Router();
+
+usersRouter.get('/', (req, res) => {
+  res.status(200).send('All OK from /api/users');
+});
+
+usersRouter.get('/:id', (req, res) => {
+  res.status(200).send('All OK from /api/users/:id');
+});
+
+usersRouter.get('/:id/shoppingList', (req, res) => {
+  res.status(200).send('All OK from /api/users/:id/shoppingList');
+});
+
+module.exports = usersRouter;
+```
+
+And now we can refactor `api-router.js`
+
+```js
+const apiRouter = require('express').Router();
+const userRouter = require('./users-router');
+
+apiRouter.use('/users', userRouter);
+
+apiRouter.get('/fruits', (req, res) => {
+  res.status(200).send('All OK from /api/fruits');
+});
+
+apiRouter.get('/fruits/:id', (req, res) => {
+  res.status(200).send('All OK from /api/fruits/:id');
+});
+
+module.exports = apiRouter;
+```
+
+We could do this again for fruits but you get the point. This lets us segment our routes depending on the type of resource the user is requesting. It helps keep code tidy and makes it easier to maintain.
+
+ ## Error Handling
+
+ Okay so now we've added a layer of middleware in the form of some extra routers. But what happens when we get down to our controller and models and something goes wrong, lets say the user ahs asked for a pet that doesn't exist... so far we've been handling our errors by console.logging them or maybe doind a res.send(err) which is okay but thats going to get pretty repetitive. So instead we're going to add into our middleware chain a generalised function to deal with any errors that occur.
+
+So first of all i need to declare my function which i can call again and again whenever i have an error i want to handle. 
+
+*go to app.js*
+
+#### Q: okay so if we think back to middleware being a chain of functions who can guess where we're going to need to put our error handler in this chain?
+#### A: Below the routing because we want this function to be the next available middlewear in the chain having called a controller...
+
+So lets start building our function: how do we make another function in our chain... app.use
+Now express recognises any middlewear function with 4 parameters as an error handler. And thats because there's a few important things we're going to need for this. 
+
+#### Q: Whats the most important thing do you think? 
+#### A: err
+
+But then as a middlewear function we also have to have access to req, res, and the next function in the chain (next). 
+
+  - so what are we going to want to do in this function ? ultimately send our error in one convenient line res.status(500).send({err})
+
+  - this means whenever we do a check if err console. log err in our models and controllers: instead we can just make a call to next(err) which will deal with it.

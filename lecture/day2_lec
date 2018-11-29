@@ -1,0 +1,30 @@
+// const copyArrayAndDouble = (array) => {
+//     const output = [];
+//     for (let i = 0; i < array.length; i++) {
+//         output.push(array[i] * 2);
+//     }
+//     return output;
+// }
+
+// const copyArrayAndSquare = (array) => {
+//     const output = [];
+//     for (let i = 0; i < array.length; i++) {
+//         output.push(array[i] ** 2);
+//     }
+//     return output;
+// }
+
+const double = n => n * 2;
+const square = n => n ** 2;
+const triple = n => n * 3;
+
+const copyArrayAndDoSomething = (array, func) => {
+    const output = [];
+    for (let i = 0; i < array.length; i++) {
+        output.push(func(array[i]));
+    }
+    return output;
+}
+
+copyArrayAndDoSomething([1, 2, 3], val => 'hippy hoppy holiday')
+

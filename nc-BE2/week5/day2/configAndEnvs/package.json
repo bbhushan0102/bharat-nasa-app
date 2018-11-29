@@ -1,0 +1,21 @@
+{
+  "name": "config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "npm run seed:dev && mocha spec",
+    "seed:dev": "psql -f seed/seed.sql",
+    "dev": "nodemon listen.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chai": "^4.1.2",
+    "express": "^4.16.3",
+    "nodemon": "^1.18.4",
+    "pg-promise": "^8.4.6",
+    "supertest": "^3.3.0"
+  }
+}

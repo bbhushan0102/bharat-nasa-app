@@ -1,0 +1,77 @@
+db = require('../db');const getAreas = (req, res) => {
+ db.many('SELECT * FROM areas;')
+   .then((areas) => {
+     res.status(200).send({ areas })
+   })
+}const getAreaByID = (req, res) => {
+ const { area_id } = req.params;
+ db.one('SELECT * FROM areas WHERE area_id = $<area_id>', { area_id })
+   .then(area => {
+     res.status(200).send({ area })
+   })
+   .catch(err => {
+     console.log(err, "ERROR <<<<<")
+     res.status(400).send({msg: "invalid input"})
+   })
+}const getRestaurantForArea = (req,res) => {
+ const { area_id } = req.params;
+ const areaP = db.one('SELECT * FROM areas WHERE area_id = $<area_id>', { area_id })
+ const restaurantP = db.many('SELECT * FROM restaurants JOIN areas ON restaurants.area_id = areas.area_id WHERE restaurants.area_id = $<area_id>', { area_id })
+ Promise.all([areaP, restaurantP])
+   .then(([area, restaurants]) => {
+     const restaurantsObject = restaurants.reduce((accum, {area_name,...restaurant}) => {
+       accum[restaurant.restaurant_id] = restaurant
+       return accum;
+     }, {})
+     res.status(200).send({ ...area, restaurants: restaurantsObject })
+   })
+}const addRestaurantToArea = (req,res) => {
+ const newRestaurant = req.body;
+ db.one('INSERT INTO restaurants (restaurant_name, cuisine, website, area_id) VALUES ($<restaurant_name>, $<cuisine>, $<website>, $<area_id>) RETURNING *;', newRestaurant)
+   .then(newRestaurant => {
+     res.status(201).send({newRestaurant})
+   })
+}module.exports = { getAreas, getAreaByID, getRestaurantForArea, addRestaurantToArea };
+const db = require('../db');const getRestaurant = (req, res) => {
+ db.many('SELECT * FROM restaurants;')
+   .then((restaurants) => {
+     res.status(200).send({ restaurants })
+   })
+}const getCommentsForRestaurant = (req, res) => {
+ const {restaurant_id} = req.params;
+ const restaurantPromise = db.one('SELECT * FROM restaurants WHERE restaurant_id = $<restaurant_id>', { restaurant_id })
+ const commentPromise = db.many('SELECT * FROM comments JOIN restaurants ON comments.restaurant_id = restaurants.restaurant_id WHERE comments.restaurant_id = $<restaurant_id>', {restaurant_id})
+ Promise.all([restaurantPromise, commentPromise])
+   .then(([restaurant, comments]) => {
+     const commentsObject = comments.reduce((accum, {restaurant_name, cuisine, website, area_id,...comment}) => {
+       accum[comment.comment_id] = comment
+       return accum;
+     }, {})
+     res.status(200).send({ ...restaurant, comments: commentsObject })
+   })
+}const getRatingsForRestaurant = (req, res) => {
+ const {restaurant_id} = req.params;
+ const restaurantPromise = db.one('SELECT * FROM restaurants WHERE restaurant_id = $<restaurant_id>', { restaurant_id })
+ const ratingPromise = db.many('SELECT * FROM ratings JOIN restaurants ON ratings.restaurant_id = restaurants.restaurant_id WHERE ratings.restaurant_id = $<restaurant_id>', {restaurant_id})
+ Promise.all([restaurantPromise, ratingPromise])
+   .then(([restaurant, ratings]) => {
+     const ratingsObject = ratings.reduce((accum, {restaurant_name, cuisine, website, area_id,...rating}) => {
+       accum[rating.rating_id] = rating
+       return accum;
+     }, {})
+     res.status(200).send({ ...restaurant, ratings: ratingsObject })
+   })
+}const addCommentsForRestaurant = (req,res) => {
+ const newComment = req.body;
+ db.one('INSERT INTO comments (restaurant_id, body) VALUES ($<restaurant_id>, $<body>) RETURNING *;', newComment)
+   .then(comment => {
+     res.status(201).send({comment})
+   })
+}const addRatingsForRestaurant = (req,res) => {
+ const newRating = req.body;
+ db.one('INSERT INTO ratings (restaurant_id, rating) VALUES ($<restaurant_id>, $<rating>) RETURNING *;', newRating)
+   .then(rating => {
+     res.status(201).send({rating})
+   })
+}module.exports = { getRestaurant, getCommentsForRestaurant, getRatingsForRestaurant, addRatingsForRestaurant, addCommentsForRestaurant  };
+Message Input

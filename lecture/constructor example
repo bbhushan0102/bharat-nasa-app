@@ -1,0 +1,23 @@
+function WashingMachine (size, make, specialFX) {
+	this.size = size;
+	this.make = make;
+	this.specialEffect = specialFX;
+}
+
+WashingMachine.prototype.spin = function () {
+	return 'vrrrrrggghhhmmmmmmmm grrrrmmmmmmvvv';
+}
+
+WashingMachine.prototype.applySpecialEffect = function () {
+	return `Oh look, I've ${this.specialEffect}ed your washing!`;
+}
+
+WashingMachine.prototype.minify = function () {
+	this.size *= 0.5;
+}
+
+const futureWashingMachine = new WashingMachine(100, 'Northcoders', 'iron');
+futureWashingMachine.size === 100 //true
+futureWashingMachine.minify()
+futureWashingMachine.size === 50 //true
+futureWashingMachine.applySpecialEffect() === 'Oh look...' //etc

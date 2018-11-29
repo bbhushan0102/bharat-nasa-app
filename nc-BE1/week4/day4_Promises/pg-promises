@@ -1,0 +1,186 @@
+# Introducing pg-promise
+
+## Learning Objectives
+
+Students should:
+
+- Understand how to use basic query methods from the [pg-promise](https://github.com/vitaly-t/pg-promise/wiki/Learn-by-Example) library.
+- Have an intuition of how promises work to simplify asynchronous code.
+- Understand how to use [supertest](https://www.npmjs.com/package/supertest) to test end-points
+
+### pg-promise
+
+- [pg-promise](https://github.com/vitaly-t/pg-promise/wiki/Learn-by-Example)
+
+#### set-up
+
+Install and require in `pg-promise` to a 'db' folder/file.
+
+Create a congig variable / string
+
+```js
+const pgp = require('pg-promise')({ promiseLib: Promise });
+
+// mac setup
+const config = {
+  port: 5432,
+  host: 'localhost',
+  database: 'harry_pottes'
+}
+// ubuntu setup
+// const config = {
+//   port: 5432,
+//   host: 'localhost',
+//   database: 'harry_pottes',
+//   user: 'mitch',
+//   password: 'nc'
+// }
+
+// you can also use "postgres://pauls:password123@localhost:5432/harry_potter" instead of an object
+
+const db = pgp(config);
+module.exports = db;
+
+```
+
+#### controller examples
+
+```js
+// controllers/houses.js
+const db = require('../db');
+
+const getHouses = (req, res) => {
+  db.many('SELECT * FROM houses;')
+    .then(houses => {
+      res.status(200).send({ houses });
+    })
+    .catch(console.log)
+}
+```
+
+### supertest
+
+- [supertest](https://www.npmjs.com/package/supertest)
+
+```js
+describe('/api', () => {
+  describe('/houses', () => {
+    it('GET returns a status 200 and a houses object containing an array of houses', () => {
+      return request.get('/api/houses')
+        .expect(200)
+        .then(res => {
+          expect(res.body.houses).to.have.length(4)
+        })
+    })
+  })
+})
+```
+
+To stop the connection hanging at the end of our tests, we can add this into our describe block:
+
+```js
+  after(() => db.$pool.end())
+```
+
+More test examples:
+
+```js
+describe('/api', () => {
+
+  after(() => db.$pool.end())
+
+  describe('/houses', () => {
+    it('GET returns a status 200 and a houses object containing an array of houses', () => {
+      return request.get('/api/houses')
+        .expect(200)
+        .then(res => {
+          expect(res.body.houses).to.have.length(4)
+        })
+    })
+    it('POST returns a status 201 and a house object containing the new house', () => {
+      return request.post('/api/houses')
+        .send({
+          house_name: "House of Mitch",
+          founder: "Mitch",
+          animal: "Squirrel"
+        })
+        .expect(201)
+        .then(res => {
+          expect(res.body.house).to.eql({
+            house_id: 5,
+            house_name: "House of Mitch",
+            founder: "Mitch",
+            animal: "Squirrel"
+          })
+        })
+    })
+    describe('/:house_id', () => {
+      it('GET returns a status 200 and the requested house', () => {
+        return request.get('/api/houses/3')
+          .expect(200)
+          .then(res => {
+            expect(res.body.house.house_id).to.equal(3)
+          })
+      });
+      it('DELETE returns a status 200 and removed the house', () => {
+        return request.delete('/api/houses/5')
+          .expect(200)
+          .then(res => {
+            expect(res.body.msg).to.equal("DELETED")
+          });
+      });
+      it('GET returns a 404 and message for a deleted house', () => {
+        return request.get('/api/houses/5')
+          .expect(404)
+          .then(res => {
+            expect(res.body.msg).to.equal('NO HOUSE')
+          })
+      });
+    });
+  });
+});
+```
+
+controller examples:
+
+```js
+const db = require('../db');
+
+const getHouses = (req, res) => {
+  db.many('SELECT * FROM houses;')
+    .then(houses => {
+      res.status(200).send({ houses });
+    })
+    .catch(console.log)
+}
+
+const addHouse = (req, res) => {
+  db.one('INSERT INTO houses (house_name, founder, animal) VALUES ($<house_name>, $<founder>, $<animal>) RETURNING *;', req.body)
+    .then(house => {
+      res.status(201).send({ house })
+    })
+    .catch(console.log)
+}
+
+const getHouseByID = (req, res) => {
+  const { house_id } = req.params
+  db.one('SELECT * FROM houses WHERE house_id = $1', [house_id])
+    .then(house => {
+      res.status(200).send({ house })
+    })
+    .catch(err => {
+      res.status(404).send({ msg: "NO HOUSE" })
+    })
+}
+
+const removeHouseByID = (req, res) => {
+  db.none('DELETE FROM houses WHERE house_id = $<house_id>', req.params)
+    .then(() => {
+      res.status(200).send({ msg: "DELETED" })
+    })
+    .catch(console.log)
+
+}
+
+module.exports = { getHouses, addHouse, getHouseByID, removeHouseByID };
+```

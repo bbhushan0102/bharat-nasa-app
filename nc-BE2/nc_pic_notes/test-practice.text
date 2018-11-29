@@ -1,0 +1,78 @@
+const getRestaurantsByArea = (req, res) => {
+  db.many("SELECT * FROM restaurants  WHERE area_id = $<area_id>;", req.params)
+    .then(restaurants => {
+      res.status(200).send({ restaurants });
+    })
+    .catch(console.log);
+};
+
+const addRestaurantsByArea = (req, res) => {
+  db.one(
+    "INSERT INTO restaurants (name, area_id, cuisine,website) VALUES ($<name>,$<area_id>,$<cuisine>,$<website>) RETURNING *;",
+    { ...req.body, ...req.params }
+  )
+    .then(restaurants => {
+      console.log(restaurants);
+      res.status(200).send(restaurants);
+    })
+    .catch(console.log);
+};
+
+
+----------------------------------
+spec file
+let { expect } = require("chai");
+const app = require("../app");
+const request = require("supertest")(app);
+const db = require("../db");
+
+describe("/api", () => {
+  before(() => db.$pool.end());
+
+  after(() => db.$pool.end());
+  describe("/areas", () => {
+    it("GET returns a status 200 and a areas object containing an array of areas", () => {
+      return request
+        .get("/api/areas")
+        .expect(200)
+        .then(res => {
+          expect(res.body.areas).to.have.length(4);
+        });
+    });
+  });
+  describe("/areas/:area_id/restaurants", () => {
+    it("GET returns a status 200 and an object containing an array of restaurants in this area", () => {
+      return request
+        .get("/api/areas/3/restaurants")
+        .expect(200)
+        .then(res => {
+          expect(res.body.restaurants).to.have.length(6);
+        });
+    });
+  });
+  // describe("/areas/:area_id/restaurants", () => {
+  //   it("POST returns a status 201 and add a restraunt to given area id", () => {
+  //     return request
+  //       .post("/api/areas/3/restaurants")
+  //       .send({
+  //         name: "McDonalds",
+  //         area_id: 2,
+  //         cuisine: "American Finest Dining",
+  //         website: "www.mcdonalds.com"
+  //       })
+  //       .expect(201)
+  //       .then(res => {
+  //         expect(res.body.restaurants).to.eql(
+  //           {
+  //             restaurant_id: 5,
+  //             name: "McDonalds",
+  //             area_id: 2,
+  //             cuisine: "American Finest Dining",
+  //             website: "www.mcdonalds.com"
+  //           }
+  //         );
+  //       });
+  //   });
+  // });
+});
+

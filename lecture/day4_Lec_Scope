@@ -1,0 +1,191 @@
+# Scope
+
+Scope refers to the rules by which the JavaScript interpreter (Node/browser) look up variables within your programme.
+
+If JS was a compiled language then the interpreter would go through the whole file, parse the syntax to make sure it's valid and if so, transform it all to machine code, and any errors would make the process fail at the syntax parsing stage. But if we write code with errors in JS such as
+
+```
+function foo () {
+    console.log(bar); // <-- No reference error if foo isn't called!
+}
+```
+
+and the function is never run, then the programme doesn't throw a reference error. It runs. JS only parses and compiles the code that is required for the programme to run.
+
+## Scope and compilation
+
+To understand scope we need to start thinking about how our code is compiled and run by the JS engine which involves thinking about code often in a different order to the order in which we write it.
+
+Scope: the compiler collects and maintains a look-up list of all the declared identifiers (variables), and enforces a strict set of rules as to how these are accessible to currently executing code. Variables that are accessible are said to be **in scope**
+
+### Execution Context
+
+An execution context is a wrapper that helps manage the code you are running. Code can contain a number of different contexts, where different variables may be available.
+
+So, in this example, using the methodology for understanding how JS runs earlier this week, what happens?
+
+### Example #1
+
+```javascript
+var name = 'Harriet';
+
+function print(name) {
+  console.log(name);
+}
+
+print('Foo');
+```
+
+It prints foo, as the variable 'name' is available in the local scope of the function.
+
+What happens in this example, when we no longer have 'name' available in the local memory?
+
+### Example #2
+
+```javascript
+var name = 'Harriet';
+
+function print() {
+  var bar = 'bar';
+  console.log(name);
+}
+
+print();
+```
+
+JS looks in the memory of the execution context above it. In this case, it's the global. So here we will introduce a fancy name for memory - it's variable environment. So it looks immediately outside its own vairable environment, and in the global variable environment, it finds 'name' - it's Harriet. And it runs.
+
+So what happens in this example?
+
+### Example #3
+
+```javascript
+function print() {
+  var bar = 'bar';
+  console.log(name);
+}
+
+print();
+```
+
+We no longer have a variable 'name' in any of the variable environments that print lives in, so we get an error.
+
+Which type of error? A reference error.
+
+## Scope
+
+Variables which are available in any variable environment - either the local or external - are **in scope**.
+
+* The same variable name can be used in different execution contexts.
+* The interpreter will look up through the levels of nesting to decided which variable should be used. It will stop looking at the closest lexical context when it finds the variable.
+
+Can we ever access the global variable `name` from inside the function `print`? Not unless we change the parameter to something else.
+
+### Example #4
+
+What happens here?
+
+```javascript
+var name = 'Harriet';
+var name = 'Mauro';
+function foo() {
+  var name = 'Chris';
+}
+
+foo();
+console.log(name);
+```
+
+The second declaration of the variable `name` overwrites the first in the global execution context.
+
+In the local execution context of the function, a new variable `name` is created, so we don't overwrite the other one.
+
+What if we do instead:
+
+```javascript
+function foo() {
+  name = 'Chris';
+}
+console.log(name);
+```
+
+### Example #5
+
+What happens here?
+
+```javascript
+var a = 12;
+
+function foo(a) {
+  console.log(a + b);
+}
+
+var b = 2;
+
+foo(2);
+```
+
+* Although they exist in different execution contexts, both `a` and `b` are in scope in the function body. `a` is defined as 2, as it's the first argument passed to the function. `b` is grabbed from the global variable environment.
+
+### Example #6
+
+What happens here?
+
+```javascript
+function foo() {
+  var a = 'hello world';
+}
+
+console.log(a);
+```
+
+* An outer execution context cannot access variables defined in a local execution context.
+
+### Example #7
+
+What happens here?
+
+```javascript
+function foo() {
+  var a = 'hello world';
+}
+
+function bar() {
+  console.log(a);
+}
+
+foo();
+bar();
+```
+
+* Two different local execution contexts are completely separate, they cannot access one another's local variables.
+
+### Example #8
+
+What happens here?
+
+```javascript
+function foo(a) {
+  a = 'Hello world';
+}
+foo();
+
+console.log(a);
+```
+
+* A parameter behaves like a local variable. We cannot access it outside of its local context.
+
+### Example #8
+
+What happens here?
+
+```javascript
+function foo() {
+  a = 'hello world';
+}
+foo();
+
+console.log(a);
+```
+
+* Here we accidentially add a global variable to the global context. The interpreter looks for `a` in the local context, can't find, it, moves onto the global context and looks there. It still can't find `a`, so at this point it adds `a` (in the global context) and sets it to `hello world`.

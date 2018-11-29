@@ -1,0 +1,43 @@
+const { expect } = require('chai');
+const map = require('../map');
+
+
+describe('map', () => {
+    it('returns a new array when given an array', () => {
+        const inputArray = [];
+        expect(map(inputArray)).to.eql([]);
+        expect(map(inputArray)).to.not.equal(inputArray);
+    });
+    it('returns an array of the same length as the input array', () => {
+        const inputArray = [1, 2, 3];
+        expect(map(inputArray)).to.have.lengthOf(3);
+    });
+    it('invokes iteratee for each value and puts the outputs in a new array', () => {
+        const double = n => n * 2;
+        const inputArray = [1, 2, 3];
+        expect(map(inputArray, double)).to.eql([2, 4, 6])
+    });
+    it('invokes the iteratee with the index positon', () => {
+        const inputArray = ['a', 'b', 'c'];
+        const returnIndex = (val, index) => index;
+        expect(map(inputArray, returnIndex)).to.eql([0, 1, 2]);
+    });
+    it('invokes the iteratee with the array', () => {
+        const inputArray = ['a', 'b'];
+        const returnArray = (val, index, array) => array;
+        expect(map(inputArray, returnArray)).to.eql([['a', 'b'], ['a', 'b']]);
+    });
+    it('returns a new array when given an object', () => {
+        const inputObject = {};
+        expect(map(inputObject)).to.eql([]);
+    });
+    it('returns an array of with the same number of values as the input object', () => {
+        const inputObject = { a: 1, b: 2, c: 3 }
+        expect(map(inputObject)).to.have.lengthOf(3);
+    });
+    it('[OBJECT] invokes iteratee for each value and puts the outputs in a new array', () => {
+        const double = n => n * 2;
+        const inputObject = { a: 1, b: 2, c: 3 };
+        expect(map(inputObject, double)).to.eql([2, 4, 6])
+    });
+});

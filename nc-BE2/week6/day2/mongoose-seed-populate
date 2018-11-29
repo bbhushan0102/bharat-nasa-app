@@ -1,0 +1,197 @@
+## Mongoose query execution
+
+Mongoose will not execute a query until `.then` or `.exec` has been called upon it. This is very useful when building complex queries. Some examples can include using the populate and aggregate functions.
+
+E.g.
+
+```js
+User.find({name: 'Mitch'}) // Will not execute
+```
+
+__Execution via callback:__
+
+Although disliked by many due to its nesting nature, queries can be executed by providing the optional callback.
+
+```js
+User.find({name: 'Mitch'}, (err, res) => {}) // Will execute
+```
+
+__Then API as a Promises/A+__
+
+Mongoose queries do provide a `.then` function. This is not to be confused with regular promises. Simply put, the Promises/A+ specification requires a then function to work much like how we're used to with promises.
+
+```js
+User.find({name: 'Mitch'}).then(); // Will execute
+```
+
+__Multiple queries at once:__
+
+```js
+Promise.all([User.find({name: 'Mitch'}), User.find({name: 'Paul'})]) // Will execute all queries in parallel
+```
+
+__The exec function__
+
+From Mongoose docs: `If you need a fully-fledged promise, use the .exec() function.`
+
+```js
+User.find({name: 'Mitch'}).exec(); // Will execute returning a promise
+```
+
+# Lecture example - go through Animal Rehoming solution per the following:
+
+## Models
+
+Our data schemas for Owners and Animals shoudl be as follows:
+
+```js
+// models/Owner.js
+const mongoose = require('mongoose')
+
+const ownerSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  address: {
+    city: String,
+    streetName: String
+  },
+  contactNumber: String
+})
+
+module.exports = mongoose.model('owners', ownerSchema)
+```
+
+```js
+// models/Animal.js
+const mongoose = require('mongoose')
+
+const animalSchema = new mongoose.Schema({
+  name: { type: String, required: [true, "name is a required field"] },
+  colour: String,
+  traits: [String],
+  ownerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'owners',
+    default: null
+  },
+  imageUrl: String
+})
+
+module.exports = mongoose.model('animals', animalSchema)
+```
+
+
+Relationships: An animal may have an owner
+
+- Show how mongoose lowercases and pluralizes a model's name. It's a good idea to refer to models in capitalised singular and to collections in lowercase plural. Convention helps memorisation!
+
+## Seed
+
+```js
+// seed.dev.js
+const generateOwners = require('../utils/generateOwners');
+const generateAnimals = require('../utils/generateAnimals');
+const seedDB = require('./seed');
+const mongoose = require('mongoose');
+
+mongoose.connect('mongodb://localhost:27017/animal_rehoming')
+  .then(() => seedDB(generateOwners(10), generateAnimals(10)))
+  .then(() => mongoose.disconnect())
+```
+
+`seed.dev.js` is responsible for connecting to the database, and calling the `seed` function with the raw data.
+
+Next we will look at how we have gone about generating our Owner and Animal data using faker:
+
+```js
+const faker = require('faker');
+
+const generateOwners = n => {
+  return Array.from({ length: n }, () => {
+    return {
+      name: faker.name.findName(),
+      address: {
+        city: faker.address.city(),
+        streetName: faker.address.streetName()
+      },
+      contactNumber: faker.phone.phoneNumber()
+    }
+  })
+}
+
+module.exports = generateOwners
+```
+
+Note: DON'T BE SCARED TO USE LIBRARIES SUCH AS LODASH *smiley_face*
+
+```js
+const faker = require('faker');
+const { sampleSize, random } = require('lodash')
+
+const generateTraits = () => {
+  const sampleTraits = ['fuzzy', 'gentle', 'seductive', 'hates kids', 'hated by kids', 'aloof', 'ambivalent', 'curious', 'stylish', 'narcissistic', 'sufferer of hallitosis'];
+  return sampleSize(sampleTraits, random(1, 3))
+}
+
+const generateAnimals = n => {
+  return Array.from({ length: n }, () => {
+    return {
+      name: faker.name.firstName(),
+      colour: faker.commerce.color(),
+      traits: generateTraits(),
+      imageUrl: faker.image.animals()
+    }
+  })
+}
+
+module.exports = generateAnimals;
+```
+
+Next we will look at the `seedDb` function that we have invoked in `seed.dev.js`:
+
+Again: DON'T BE SCARED TO USE LIBRARIES SUCH AS LODASH *smiley_face*
+
+```js
+const mongoose = require('mongoose');
+const { Owner, Animal } = require('../models');
+const { sample } = require('lodash')
+
+const seedDb = (ownerData, animalData) => {
+  return mongoose.connection.dropDatabase()
+    .then(() => {
+      return Owner.insertMany(ownerData)
+    })
+    .then(ownerDocs => {
+      const newAnimals = animalData.map(animal => {
+        let ownerId = Math.random() < 0.5 ? null : sample(ownerDocs)._id
+        return {
+          ...animal,
+          ownerId
+        }
+      })
+      return Animal.insertMany(newAnimals)
+    })
+}
+
+module.exports = seedDb;
+```
+
+Now we have seeded our lovely database of pets and owners!
+
+## GET /animals
+
+Set-up express server with `/animals` endpoint:
+
+Use mongoose's `.populate`:
+
+```js
+// animals controller
+const { Animal } = require('../models')
+
+exports.getAllAnimals = (req, res, next) => {
+  Animal.find()
+    .populate('ownerId', 'name -_id')
+    .then(animals => {
+      res.send({ animals })
+    })
+}
+```

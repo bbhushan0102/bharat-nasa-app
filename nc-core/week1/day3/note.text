@@ -1,0 +1,36 @@
+all primitive are immuteable means ;
+all primitive compare values.
+objects
+array [] new array
+function ()
+objects { } new objects
+date
+regex
+
+
+
+function getEvensNums(arr) {
+
+  return arr.filter((num) => num % 2 === 0);
+}
+
+module.exports =  {getEvensNums};
+
+-------- ****..........................
+const getEvenNums = require('../');
+const {expect} = require('chai');
+
+describe('getEvenNums', () => {
+    it('returns new array reference', () => {
+        const array = [];
+       expect(getEvenNums(array)).to.not.equal(array);
+       //it will check old array not equal to retrunred array
+       
+    });
+    it('return even number', () => {
+        const array = [];
+       expect(getEvenNums([2])).to.eql([2]);
+       //it will values inside an array.
+       
+    });
+});

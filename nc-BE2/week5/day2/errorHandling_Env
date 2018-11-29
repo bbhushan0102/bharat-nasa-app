@@ -1,0 +1,84 @@
+### Folder structure
+
+`npm init -y'
+
+Folders. What folders will I need? And what layout should I follow?
+
+But we're going to need:
+
+* controllers
+* db
+* seed
+* spec
+* an app and an index.js.
+* config
+
+We'll explore these one by one. Starting with the seed.
+
+### seed
+
+What's in a seed?
+
+(Create seed.sql file)
+
+How do I set it up to run?
+
+(Add to package.json)
+
+Let's just set it up for dev to begin with a script property of `npm run seed:dev`
+
+### db
+
+Before we can access our db in our controllers, we're going to need to connect to it using PGP. I do this in the db file, so we can abstract all of the connection logic from the controllers themselves.
+
+(Install `pg-promise`, create DB file with DB, pgp, and export DB(pgp))
+
+PGP needs to be initialised with a promise library, but since we now have promise in JS we can use that.
+
+### App and Listen
+
+Why do we separate these? We don't want to listen when we're running the tests, as supertest does not need to check against localhost, so we can test on one. (It uses an "ephemeral port").
+
+(Create app.js and index.js in root. Include / => 'All good!')
+
+### Work through app setup, routes, controllers
+
+(Create router/api.js and controllers/film.js)
+
+### testing
+
+Build out tests for dev database.
+
+So far, we have not had seperate test databases to our regular databases. But that doesn't make sense. Why?
+
+* We don't want to drop our development database every single time we test!
+* We want our test data to be consistent and reliable.
+* We don't want to have to reseed significant volumes of data every time - just the necessary amount to pass all our tests.
+
+What should be test seed look like? To all intents and purposes, it should have exactly the same structure. However, we should be sure to give it a different database reference - and reseed it every time we run our tests. We need to give it a much smaller volume of data too.
+
+So let's setup a test database that looks like this (/seed/test.seed/sql), and change our test script to run this file and then mocha.
+
+However, we have a problem now. Any guesses?
+
+What db are our controllers connecting to?
+
+It's set in stone. We are always using the dev database. We need more flexibility.
+
+### Process.env
+
+Whenever we run node, we have access to all of our environment variables on an object call process.env.
+
+(Show process.env)
+
+This is just like a regular JS object. So we can modify it when our problem is running. This means we can inform our program which database we want to listen to intelligently.
+
+So let's modify it by adding our own property, NODE_ENV, and setting it to test.
+
+That should hopefully give us an idea of what we need to do. So, at the top of the app we can specify we will either be using the environment we specify, or the development environment.
+
+Now in our tests, we can set the NODE_ENV to test. And let's look how that plays out.
+
+Now all we need to do is establish our configs. Like so.
+
+TADA!

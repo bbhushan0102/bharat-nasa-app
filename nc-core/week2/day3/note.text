@@ -1,0 +1,249 @@
+### Factory-functions and Rules of `this`
+
+
+**Re-cap**
+
+ * Re-define a programming paradigm.
+ * Discuss features of the **functional-programming** paradigm.
+ * Discuss advantages of things like pure functions.
+ * What are the possible limitations of **functional programming**.
+
+**Motivation**
+
+- One very popular coding paradigm is **object-oriented programming**.  Objects hold data in **properties** and behaviour / actions in **methods**.
+
+- We use objects to represent "units of meaning" in our code. They are the nouns of our program.
+
+
+**Definition**
+
+* Factory function
+
+- This is simply a function that will return an object with various **properties** and **methods**.
+
+
+Suppose we are the give the task of creating an object that holds data and methods for somebody's amazon account.  In the process of designing this account, we need to consider several things: what kind of information shall the account store, do we need to pass in information to the account when we initialise it?, how can we update features of the account data
+
+- Consider the function below :
+```js 
+function createAccount() {
+    const newAccount = {};
+    return newAccount;
+}
+```
+- This is a very very basic factory function.  We simply declare a new empty object called `newAccount` and then return it out of the function.
+
+We can also add properties to our object in the following manner :
+
+```js
+function createAccount (name,age,sortCode) {
+
+    const newAccount = {};
+    newAccount.name = name;
+    newAccount.age = age;
+    newAccount.sortCode = sortCode;
+    return newAccount;
+};
+
+const samAccount = createAccount('sam',30,'42-42-42');
+```
+Now we can create a constant `samAccount`.  When we invoke `createAccount` then `name`, `age` and `sortCode` will still be assigned to `'sam'`, `30` and `'42-42-42'`, respectively.  Then `createAccount` will return a new object will all these properties.
+
+```js
+console.log(samAccount);
+/** 
+{
+    name : 'sam',
+    age : 30,
+    sortCode : '42-42-42'
+}
+**/
+```
+Now we may want to store additional information within this object such as a wishlist or a basket where we can items that we wish to purchase.  In this case, we would want to store either arrays or objects inside the account information so they can store data themselves:
+
+```js
+function createAccount (name,age,sortCode) {
+
+    const account = {};
+    account.name = name;
+    account.age = age;
+    account.sortCode = sortCode;
+    account.basket = {};
+    // basket is initialised to an empty object 
+    account.wishList = [];
+    // wishList is initialised to an empty array
+    return account;
+}
+```
+
+- However, what is the point of an account object if you cannot add things to the wishList or update the basket etc.
+
+- In order to mutate / update **properties** inside the instance that we have created we can add **methods** to our newAccount that can update the object's properties. 
+
+
+```js
+function createAccount (name,age,sortCode) {
+
+    const newAccount = {};
+    newAccount.name = name;
+    newAccount.age = age;
+    newAccount.sortCode = sortCode;
+    newAccount.basket = {};
+    newAccount.addToBasket = function (item) {
+        // this function will take the passed item and add it to the basket
+    };
+    return account;
+}
+
+```
+
+- Here we make a call to our factory-function in order to create two different objects:
+
+```js
+const jac = createAccount('jac',26,'42-42-42');
+const harry = createAccount('harry',21,'40-41-43');
+```
+
+If we do the following, what are we checking : 
+
+```js
+console.log(jac === harry);
+```
+
+The `===` operator is checking the two objects' reference.  Every time we invoke `createAccount` we produce a new instance and therefore two new instances in memory.
+
+How about the following: 
+
+```js
+console.log(jac.addToBasket === harry.addToBasket);
+// false
+```
+
+* The fact that the above outputs `false` means that there are two separate functions stored in memory for the jac object and the harry object.  In fact, every time we create a new object instance we are also creating a new function.  
+
+* This is clearly very problematic if we wanted to create 5 million different instances - this would mean 5 million different functions for each instance!
+
+* Clearly it would be far more efficient to have one place where we stored the `addToBasket` functionality so it can be shared amongst all the different instances.
+
+
+```js
+
+function addToBasket(item) {
+    newAccount.basket[++newAccount.quantity] = item;
+}
+
+function createAccount (name,age,sortCode) {
+
+    const newAccount = {};
+    newAccount.name = name;
+    newAccount.age = age;
+    newAccount.sortCode = sortCode;
+    newAccount.basket = {};
+    newAccount.addToBasket = addToBasket;
+    return account;
+}
+const jonnyAccount = createAccount('jonny',31,'42-42-42');
+const samAccount = createAccount('sam',30,'12-34-56');
+
+jonnyAccount.addToBasket('bongos')
+samAccount.addToBasket('xylophone');
+```
+
+* What will happen when we reference `newAccount` inside the local execution context of `addToBasket`.  The javascript engine will attempt to locate the `newAccount` variable in its local variable environment and then go up the scope chain to find it.   In this example, it will be unable to locate it so it will throw a `ReferenceError`.
+
+* We need a way of referencing the current instance we are working with during call time.  For this we can use the `this` keyword...
+
+
+
+## What's this? 
+
+- The `this` keyword in JavaScript represent the context in which a function is called. 
+- The context is generally represented by an object.
+
+
+### Implicit binding ### 
+
+Whenever a function is called as a method of an object, `this` inside of it gets bound to whatever object is calling the function (i.e. the object left of the dot)
+
+```js
+
+function addToBasket(item) {
+    // newAccount.basket[++newAccount.quantity] = item;
+    this.basket[++this.quantity] = item;
+}
+
+function createAccount (name,age,sortCode) {
+
+    const newAccount = {};
+    newAccount.name = name;
+    newAccount.age = age;
+    newAccount.sortCode = sortCode;
+    newAccount.basket = {};
+    newAccount.addToBasket = addToBasket;
+    return account;
+}
+
+jonnyAccount.addToBasket('bongos'); // this points to jonnyAccount
+samAccount.addToBasket('xylophone'); // this points to samAccountdetails
+
+
+```
+
+### Explicit binding ### 
+
+
+We can call and explicitly set the value of `this` of a function call by using the function methods `call` and `apply`.
+
+```js
+
+function addToBasket(...items) {
+    items.forEach(item => {
+        this.basket[++this.quantity] = item;
+    });
+}
+
+const jac = createAccount('jac',26,'31-41-59');
+addToBasket.call(jac,'marmite','margarine','butter');
+// call takes the context object as first argument, then a list of the other arguments
+
+addToBasket.apply(mitch,['saxophone','clarinet','bassoon'])
+// apply takes the context object as the first argument and then an array of the arguments that should be supplied to the function
+
+
+```
+#### `bind` ####
+
+* The `bind` method is a native higher-order function that returns a new function.  It also takes a function and a context object as its arguments.  The newly returned function has its value of `this` pointing to whatever context object we pass to `bind`.
+Whenever we open up a local execution context then `this` will point to the specified context object.
+
+```js
+const updateHarrysBasket = addToBasket.bind(harry);
+// we pass harry to the bind method - harry is the context object in this situation
+// therefore, whenever me make a call to updateHarrysBasket then this will point to harry
+
+updateHarrysBasket('piano');
+// this -> harry
+updateHarrysBasket('marimba');
+// this -> harry
+updateHarrysBasket('celeste');
+// this -> harry
+console.log(harry.basket)
+// {1 : 'piano', 2 : 'marimba' , 3 : 'celeste'};
+
+```
+
+* Default binding
+
+Whenever a function is called "nakedly", i.e. not as a method of an object, i.e. without a context, `this` gets bound to:
+  - the `global` object (in Node)
+  - the `Window` object (in browser)
+  - `undefined` if running under `strict mode`
+
+- Calling a function that relies on `this` without a context makes no sense
+- `this` bound to the global object is useless, dangerous and confusing
+
+
+```js
+const anotherGreetingFunction = harry.sayStuff;
+anotherGreetingFunction(); // this will still point to the global as we have a naked function call at the call-site
+```

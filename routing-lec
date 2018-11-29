@@ -1,0 +1,11 @@
+Routing
+server side routing
+get request
+------
+npm run build - create build forlder in a root.
+
+client side rendering- use conditional rendering
+react is called single page coding
+
+Reach router: install- npm install @reach/router
+

@@ -1,0 +1,48 @@
+Readme
+use ```js``` to make code snippets
+No link to hosted vs
+Package.json
+Start and dev scripts set up for index.js => were you running your server at all how can this have worked?
+Dont need ejs or bootstrap?? And why is mongod in the dependencies??
+No seed script
+
+Seed.dev
+Don’t need toreturn mongoose…
+Nice console.logs
+
+Seed
+Commented out code
+Utils should be a seperate folder with an index.js inside
+Don’t need to make a reference object for articles and comments: can just use your userDocs and .find()
+2 different reference object makers??
+
+App
+Console.log in your catch connect to let developers know..
+Commented out code: looks like you were going to abstract your error handlers
+
+
+Errors
+Commented out try to get this going :)
+
+Controllers
+Articles
+Dont need to spread comments to rest them again
+Over use of then blocks where you map over articles  and add comments to them… that’s synchronous code…
+Could neaten up comment post by saying const newComments = {...req.body, belongs_to = article_id}  => same with posting article
+Posting a comment and an article… not much by way of error handling- checking article exists and dealing with cast errors..
+Articles by topic i think is supposed to be on topics route
+No articles for a topic doesn’t necessarily mean 404: there could be legitimately no articles on a topic yet… validate that the topic exists instead
+Vote function only difference in logic is the +1 or -1 : instead make a variable votes and pass that to the mongoose query (same with comments)
+Topics
+No error handling here
+
+User
+User should come back as an object, no? Why would you check the length?
+
+Spec
+Get rid of timeout
+Some unfinished tests e.g. line 62
+Refer more to the seeded data in tests: res.articles.length should be same as seeded-articles.length
+Votes should be articles[0].votes +1 
+Your controllers for posting appropriately get belongs to off params but in the tests you also send it on the req body
+Commented out code
